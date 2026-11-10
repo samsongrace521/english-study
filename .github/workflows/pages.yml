@@ -6,6 +6,11 @@ on:
   schedule:
     - cron: '30 22 * * *'   # 06:30 Taiwan time
   workflow_dispatch:
+    inputs:
+      force:
+        description: "重新挑選今天的新聞"
+        type: boolean
+        default: false
 
 permissions:
   contents: write
@@ -26,7 +31,7 @@ jobs:
           node-version: 20
       - name: Pick today's news
         if: github.event_name != 'push'
-        run: node scripts/fetch-news.js
+        run: node scripts/fetch-news.js ${{ inputs.force && '--force' || '' }}
       - name: Save news archive
         if: github.event_name != 'push'
         run: |

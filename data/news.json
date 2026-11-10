@@ -1,77 +1,243 @@
 [
  {
   "date": "2026-11-10",
-  "slug": "a footballer dies",
-  "title": "A footballer dies – level 3",
-  "level": 3,
-  "link": "https://www.newsinlevels.com/products/a-footballer-dies-level-3/",
-  "source": "News in Levels",
+  "slug": "https://www.taipeitimes.com/News/lang/archives/2026/11/10/2003867442",
+  "source": "Taipei Times 中英對照",
+  "title": "Five ways US foreign policy may change with a Democrat-led Congress",
+  "titleZh": "民主黨成國會多數 美國外交政策預期之五大轉變",
+  "level": 0,
+  "link": "https://www.taipeitimes.com/News/lang/archives/2026/11/10/2003867442",
   "published": "2026-11-10",
-  "teaser": "Tragedy has struck Spanish football following the death of Tenerife striker Jesús de Miguel at the age of 30.  The forward suffered severe head and chest injuries during a heavy collision with FC Andorra’s goalkeeper, who was sent off for the challenge.",
+  "teaser": "Democrats secured control of the US Senate and House of Representatives in the midterm elections on Tuesday last week, giving them an important slice of power in Washington after two years of Republican control. During the campaign, Democrats had argued that Republicans ceded…",
   "words": [
    [
-    432,
-    "forward",
+    288,
+    "policy",
     0
    ],
    [
-    68,
-    "emergency",
+    168,
+    "secured",
     0
    ],
    [
-    438,
-    "indicate",
+    511,
+    "representatives",
     0
    ],
    [
-    66,
-    "condition",
+    117,
+    "power",
     0
    ],
    [
-    169,
-    "initially",
+    577,
+    "campaign",
+    0
+   ],
+   [
+    318,
+    "administration",
+    0
+   ],
+   [
+    203,
+    "expected",
+    0
+   ],
+   [
+    450,
+    "approval",
     1
    ],
    [
-    157,
-    "stable",
+    244,
+    "launched",
     0
    ],
    [
-    967,
-    "deteriorated",
-    0
-   ],
-   [
-    423,
-    "postponed",
-    0
-   ],
-   [
-    156,
-    "entire",
-    0
-   ],
-   [
-    271,
-    "community",
-    0
-   ],
-   [
-    853,
-    "respected",
+    221,
+    "seeks",
     0
    ],
    [
     558,
-    "authorities",
+    "authorization",
+    1
+   ],
+   [
+    517,
+    "resolutions",
     0
    ],
    [
-    653,
-    "further",
+    235,
+    "support",
+    0
+   ],
+   [
+    361,
+    "influence",
+    0
+   ],
+   [
+    481,
+    "nominations",
+    1
+   ],
+   [
+    709,
+    "obtain",
+    0
+   ],
+   [
+    41,
+    "permission",
+    0
+   ],
+   [
+    210,
+    "require",
+    0
+   ],
+   [
+    512,
+    "public",
+    1
+   ],
+   [
+    584,
+    "direct",
+    1
+   ],
+   [
+    644,
+    "financial",
+    0
+   ],
+   [
+    118,
+    "aid",
+    0
+   ],
+   [
+    733,
+    "broad",
+    1
+   ],
+   [
+    193,
+    "assistance",
+    1
+   ],
+   [
+    54,
+    "energy",
+    0
+   ],
+   [
+    53,
+    "decide",
+    1
+   ],
+   [
+    160,
+    "likely",
+    1
+   ],
+   [
+    282,
+    "majorities",
+    0
+   ],
+   [
+    326,
+    "priority",
+    0
+   ],
+   [
+    112,
+    "target",
+    0
+   ],
+   [
+    298,
+    "committee",
+    0
+   ],
+   [
+    214,
+    "introduced",
+    0
+   ],
+   [
+    825,
+    "legislation",
+    0
+   ],
+   [
+    822,
+    "global",
+    1
+   ],
+   [
+    710,
+    "conduct",
+    0
+   ],
+   [
+    394,
+    "ongoing",
+    0
+   ],
+   [
+    503,
+    "factors",
+    0
+   ],
+   [
+    144,
+    "limit",
+    1
+   ],
+   [
+    688,
+    "restore",
+    0
+   ],
+   [
+    905,
+    "unprecedented",
+    0
+   ],
+   [
+    229,
+    "increase",
+    0
+   ],
+   [
+    103,
+    "budget",
+    0
+   ],
+   [
+    705,
+    "consult",
+    0
+   ],
+   [
+    176,
+    "canceled",
+    0
+   ],
+   [
+    297,
+    "term",
+    0
+   ],
+   [
+    365,
+    "strikes",
     0
    ],
    [
@@ -80,40 +246,14 @@
     0
    ],
    [
-    239,
-    "cause",
-    0
-   ],
-   [
-    491,
-    "function",
-    0
-   ],
-   [
-    124,
-    "progressively",
+    429,
+    "involvement",
     1
-   ],
-   [
-    191,
-    "match",
-    0
-   ],
-   [
-    205,
-    "arranged",
-    0
-   ],
-   [
-    379,
-    "specific",
-    0
-   ],
-   [
-    64,
-    "articles",
-    0
    ]
-  ]
+  ],
+  "stats": {
+   "words": 635,
+   "avgSentence": 19.8
+  }
  }
 ]

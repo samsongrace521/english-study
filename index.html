@@ -150,6 +150,16 @@ a.btn{text-decoration:none;display:inline-block}
 .rq{margin-top:12px}
 .rq p{margin:0 0 8px}
 .rq .fb{margin-top:8px}
+.copy{font-size:12px;color:var(--muted);border-left:3px solid var(--line);padding:2px 0 2px 10px;margin:10px 0}
+textarea{font:inherit;font-size:15px;border:1px solid var(--line);border-radius:8px;padding:10px;background:var(--card);color:var(--ink);box-sizing:border-box;resize:vertical}
+.sn{padding:10px 0;border-bottom:1px solid var(--line)}
+.sn-en{display:grid;grid-template-columns:28px minmax(0,1fr) auto;gap:8px;align-items:start;font-size:17px;line-height:1.7}
+.sn-en .no{font-family:var(--f-mono);font-size:12px;color:var(--muted);padding-top:5px}
+.sn details{margin:4px 0 0 36px}
+.sn summary{cursor:pointer;font-size:13px;color:var(--navy);width:max-content}
+.sn-zh{font-size:15px;line-height:1.7;padding:6px 10px;margin-top:4px;background:var(--soft);border-radius:6px}
+.pbr{border:0;height:10px;margin:0}
+details.more summary{cursor:pointer;color:var(--navy);font-size:14px;padding:10px 2px}
 .chips{display:flex;gap:6px;flex-wrap:wrap}
 .chips button{padding:5px 12px;font-size:13px;border-radius:20px}
 .chips button[aria-pressed="true"]{background:var(--ink);color:var(--paper);border-color:var(--ink)}
@@ -309,6 +319,36 @@ function planFor(d){
 }
 /* ---------- 每日閱讀 ---------- */
 let NEWS=null, PASS=null, rdNews=0, rdLesson=null, rdZh=false;
+const RDK='toeic1000.reader';let rdText='';try{rdText=localStorage.getItem(RDK)||''}catch(e){}
+/* 逐句閱讀器：Chrome 內建翻譯（在本機執行，免登入）；不支援時改提供 Google 翻譯連結 */
+let trObj=null,trLoading=null,trPct=null;
+const within=(p,ms)=>Promise.race([p,new Promise((_,rej)=>setTimeout(()=>rej(new Error('timeout')),ms))]);
+function startTr(){if(trObj||trLoading||!('Translator' in self))return trLoading;
+  trLoading=(async()=>{for(const t of ['zh-Hant','zh']){try{const a=await within(Translator.availability({sourceLanguage:'en',targetLanguage:t}),5000);
+    if(a&&a!=='unavailable'){trObj=await Translator.create({sourceLanguage:'en',targetLanguage:t,monitor(m){m.addEventListener('downloadprogress',e=>{trPct=Math.round((e.loaded||0)*100)})}});return trObj}}catch(e){}}return null})()
+    .finally(()=>{trLoading=null});return trLoading}
+async function getTr(){if(trObj)return trObj;const p=startTr();if(!p)return null;try{return await within(p,8000)}catch(e){return null}}
+const ABBR=/\b(Mr|Mrs|Ms|Dr|Prof|St|No|Jan|Feb|Mar|Apr|Jun|Jul|Aug|Sept?|Oct|Nov|Dec|Inc|Ltd|Co|Corp|vs|etc|e\.g|i\.e|U\.S|U\.K|U\.N|a\.m|p\.m)\.$/i;
+function splitSentences(raw){
+  const paras=raw.replace(/\r/g,'').split(/\n+/).map(s=>s.trim()).filter(s=>s&&!/[㐀-鿿]/.test(s)&&!/^Photo\b/i.test(s));
+  const out=[];for(const p of paras){const parts=p.replace(/\s+/g,' ').split(/(?<=[.!?]["”’)]?)\s+(?=["“‘(]?[A-Z0-9])/);
+    let buf='';for(const s of parts){buf=buf?buf+' '+s:s;if(!ABBR.test(buf)&&!/\b[A-Z]\.$/.test(buf)){out.push(buf);buf=''}}if(buf)out.push(buf);out.push(null)}
+  while(out.length&&out[out.length-1]===null)out.pop();return out}
+function markAll(text){return esc(text).replace(/[A-Za-zé][A-Za-zé'’-]*/g,t=>{const i=wordMap().get(t.toLowerCase().replace(/’/g,"'"));return i!==undefined?`<mark title="${esc(W[i].w+'：'+W[i].m)}">${t}</mark>`:t})}
+function renderReader(){const out=$('#rdOut');if(!out)return;const ss=splitSentences(rdText);
+  if(!ss.length){out.innerHTML='';return}
+  let k=0;const n=ss.filter(Boolean).length;
+  out.innerHTML=`<p class="small muted">共 ${n} 句。標黃的是單字表裡的字（滑鼠移上去可看中文）。每句的中文先收起來，讀完再點「看中文」確認。</p>`+
+   ss.map(s=>s===null?'<hr class="pbr">':`<div class="sn"><div class="sn-en"><span class="no">${++k}</span><span>${markAll(s)}</span>${sayBtn(s)}</div><details data-s="${esc(s)}"><summary>看中文</summary><div class="sn-zh">…</div></details></div>`).join('');
+  out.querySelectorAll('details[data-s]').forEach(d=>d.addEventListener('toggle',async()=>{if(!d.open||d.dataset.done)return;const box=d.querySelector('.sn-zh');const s=d.dataset.s;
+    box.textContent='翻譯中…';const tr=await getTr();
+    if(tr){try{box.textContent=await within(tr.translate(s),10000);d.dataset.done=1;return}catch(e){}}
+    box.innerHTML=`${trLoading?`Chrome 正在下載翻譯模型${trPct!==null?`（${trPct}%）`:''}，完成後收起再點一次「看中文」即可。`:'這個瀏覽器的內建翻譯無法使用（建議用電腦版 Chrome）。'}<a href="https://translate.google.com/?sl=en&tl=zh-TW&op=translate&text=${encodeURIComponent(s)}" target="_blank" rel="noopener">用 Google 翻譯開這句 ↗</a>`}))}
+function bindReader(){const go=$('#rdGo'),clr=$('#rdClr'),inp=$('#rdIn');if(!go)return;
+  go.onclick=()=>{rdText=inp.value;try{localStorage.setItem(RDK,rdText)}catch(e){}renderReader();getTr()};
+  clr.onclick=()=>{rdText='';inp.value='';try{localStorage.removeItem(RDK)}catch(e){}renderReader()};
+  const info=$('#rdTrInfo');if(info)info.textContent=('Translator' in self)?'使用 Chrome 內建翻譯（機器翻譯，僅供理解確認）':'此瀏覽器無內建翻譯，會改用 Google 翻譯連結';
+  renderReader()}
 const STZH={new:'未學',learning:'學習中',master:'熟記'};
 let WMAP=null;
 function wordMap(){if(WMAP)return WMAP;WMAP=new Map();
@@ -327,13 +367,20 @@ async function vRead(m){m.innerHTML=`<section class="card"><p class="muted">載�
   if(rdLesson===null)rdLesson=curLesson();
   const n=NEWS[rdNews];
   const newsHTML=!n?`<section class="card"><div class="eyebrow">每日新聞</div><p class="muted">今天的新聞還沒更新，晚點再來看看。</p></section>`:
-  `<section class="card"><div class="row" style="justify-content:space-between"><div class="eyebrow">每日新聞 · ${esc(n.source)} · Level ${n.level}</div>
+  `<section class="card"><div class="row" style="justify-content:space-between"><div class="eyebrow">每日新聞 · ${esc(n.source)}${n.level?` · Level ${n.level}`:''}</div>
    ${NEWS.length>1?`<select id="rdN" aria-label="選擇日期" style="width:auto">${NEWS.map((x,k)=>`<option value="${k}"${k===rdNews?' selected':''}>${x.date.replace(/-/g,'/')}${k===0?'（最新）':''}</option>`).join('')}</select>`:''}</div>
-   <h2 class="rd-t">${esc(n.title.replace(/\s*[–-]\s*level \d\s*$/i,''))}</h2>
+   <h2 class="rd-t">${esc(n.title)}</h2>${n.titleZh?`<p class="muted" style="margin:0 0 8px">${esc(n.titleZh)}</p>`:''}
    <p class="rd-teaser">${esc(n.teaser)}</p>
-   <div class="row"><a class="btn" href="${esc(n.link)}" target="_blank" rel="noopener">到原網站讀全文 ↗</a><span class="small muted">原文版權屬 ${esc(n.source)}，這裡只放摘要與單字。</span></div>
+   <p class="copy">© ${esc(n.source.replace(/ 中英對照$/,''))} 版權所有。本站只提供標題、開頭摘要、單字表與連結；全文${n.source.startsWith('Taipei')?'與官方中文翻譯':''}請到原網站閱讀。</p>
+   <div class="row"><a class="btn" href="${esc(n.link)}" target="_blank" rel="noopener">到原網站讀全文 ↗</a>${n.stats?`<span class="small muted">全文約 ${n.stats.words} 字 · 平均每句 ${n.stats.avgSentence} 字</span>`:''}</div>
+   <p class="small muted" style="margin:12px 0 0">讀法：① 先看下面的單字 ② 開原文，複製英文內容 ③ 貼到下方「逐句閱讀器」，每句先自己讀懂，再打開中文確認。</p>
    <h3 style="margin-top:18px">文中的多益單字 <span class="small muted">${n.words.length} 個</span></h3>
-   ${n.words.length?`<p class="small muted" style="margin:0 0 6px">先看單字，再去讀原文，讀到時特別注意它們的用法。</p><div class="rl">${n.words.slice().sort((a,b)=>({learning:0,master:1,new:2}[status(a[0])])-({learning:0,master:1,new:2}[status(b[0])])).map(([i,f])=>wordRow(i,f)).join('')}</div>`:'<p class="muted">這篇沒有出現單字表裡的字。</p>'}</section>`;
+   ${n.words.length?(()=>{const ws=n.words.slice().sort((a,b)=>({learning:0,master:1,new:2}[status(a[0])])-({learning:0,master:1,new:2}[status(b[0])]));return `<div class="rl">${ws.slice(0,12).map(([i,f])=>wordRow(i,f)).join('')}</div>${ws.length>12?`<details class="more"><summary>展開其餘 ${ws.length-12} 個</summary><div class="rl">${ws.slice(12).map(([i,f])=>wordRow(i,f)).join('')}</div></details>`:''}`})():'<p class="muted">這篇沒有出現單字表裡的字。</p>'}</section>`;
+  const readerHTML=`<section class="card" id="rdr"><div class="eyebrow">逐句閱讀器</div><h2 class="rd-t">貼上文章，逐句讀、逐句對照中文</h2>
+   <p class="copy">貼上的文章只存在你自己的瀏覽器，不會上傳，也不會出現在網站上。文章版權屬原出版者（例如 © Taipei Times），僅供個人學習使用，請勿轉貼或散布。</p>
+   <textarea id="rdIn" rows="6" placeholder="把英文文章貼在這裡。中文段落與「Photo:」圖說會自動略過。" style="width:100%;margin-top:8px">${esc(rdText)}</textarea>
+   <div class="row" style="margin-top:8px"><button id="rdGo">開始逐句閱讀</button><button id="rdClr">清除</button><span class="small muted" id="rdTrInfo"></span></div>
+   <div id="rdOut" style="margin-top:12px"></div></section>`;
   const p=PASS[rdLesson];let passHTML='';
   if(p){const lw=new Set(lessonWords(rdLesson));const found=[];const seen=new Set();
     for(const t of p.en.match(/[A-Za-zé][A-Za-zé'-]*/g)||[]){const i=wordMap().get(t.toLowerCase());if(i!==undefined&&lw.has(i)&&!seen.has(i)){seen.add(i);found.push([i,t.toLowerCase()])}}
@@ -346,8 +393,10 @@ async function vRead(m){m.innerHTML=`<section class="card"><p class="muted">載�
     <div class="psg">${enP.map((x,k)=>`<p>${markPassage(x,lw).replace(/\n/g,'<br>')}</p>${rdZh&&zhP[k]?`<p class="zh">${esc(zhP[k]).replace(/\n/g,'<br>')}</p>`:''}`).join('')}</div>
     <h3 style="margin-top:18px">閱讀測驗</h3>
     ${p.q.map((q,k)=>`<div class="rq" data-k="${k}"><p><b>${k+1}.</b> ${esc(q[0])}</p><div class="opts">${q[1].map((o,j)=>`<button data-j="${j}"><span class="k">${'ABCD'[j]}</span>${esc(o)}</button>`).join('')}</div><div class="fb" hidden></div></div>`).join('')}
-    <h3 style="margin-top:18px">本課重點單字</h3><div class="rl">${found.map(([i,f])=>wordRow(i,f)).join('')}</div></section>`}
-  m.innerHTML=newsHTML+passHTML;
+    <h3 style="margin-top:18px">本課重點單字</h3><div class="rl">${found.map(([i,f])=>wordRow(i,f)).join('')}</div>
+    <p class="copy" style="margin-top:14px">本站原創短文，內容與人物皆為練習用的虛構情境。</p></section>`}
+  m.innerHTML=newsHTML+readerHTML+passHTML;
+  bindReader();
   const rn=$('#rdN');if(rn)rn.onchange=()=>{rdNews=+rn.value;vRead(m)};
   const rl=$('#rdL');if(rl)rl.onchange=()=>{rdLesson=+rl.value;vRead(m)};
   const rz=$('#rdZh');if(rz)rz.onclick=()=>{rdZh=!rdZh;vRead(m)};
@@ -438,7 +487,7 @@ function vAbout(){return `<section class="card"><h2>計畫怎麼運作</h2>
 <li><b>每週第 7 天週考</b>：40 題，題型有英翻中、中翻英、例句填空、詞性變化、拼字。考錯的字明天再複習。</li>
 <li><b>第 57–59 天</b>衝刺複習與弱點加強，<b>第 60 天</b>期末總測驗 100 題，目標 80 分以上。</li>
 <li><b>會話</b>：每個學習日把當天的例句串成對話，先讀懂再跟著唸一遍。</li>
-<li><b>每日閱讀</b>：每天早上自動挑一篇 News in Levels 的英文新聞，列出文中出現的多益單字；另有 48 篇多益風格短文，每課一篇，用該課單字寫成，附中文翻譯與閱讀測驗。</li>
+<li><b>每日閱讀</b>：每天早上自動從台北時報「中英對照」挑一篇兩天內、長度與難度適中的新聞（找不到時改用 News in Levels），列出文中的多益單字；「逐句閱讀器」可貼上文章逐句讀、逐句看中文；另有 48 篇多益風格短文，每課一篇，用該課單字寫成，附中文翻譯與閱讀測驗。</li>
 <li><b>KK 音標</b>：每張單字卡、測驗回饋與單字庫都有標註，沒辦法開聲音時可以看音標唸。重音符號 ˋ 標在主重音音節前，ˏ 是次重音；名詞和動詞重音不同的字會分開列出。</li></ul>
 <p class="small muted">快速鍵：空白鍵翻卡、1/2/3 評分、1–4 選答案、Enter 下一題。</p></section>
 <section class="card"><h3>設定</h3><div class="row" style="margin-top:10px"><label class="small muted" for="sd">開始日期</label><input type="date" id="sd" value="${S.start||today()}" style="width:auto"><button id="saveStart">更新</button></div>

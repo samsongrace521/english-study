@@ -135,6 +135,21 @@ input[type=text],input[type=date],select{font:inherit;color:var(--ink);backgroun
 .dots i{width:7px;height:7px;border-radius:50%;background:var(--soft);border:1px solid var(--line)}
 .dots i.on{background:var(--go);border-color:var(--go)}
 .filters{display:grid;grid-template-columns:1fr auto;gap:8px}
+a.btn{text-decoration:none;display:inline-block}
+.rd-t{margin:8px 0 6px;font-size:22px}
+.rd-teaser{font-size:16px;line-height:1.7}
+.psg p{font-size:17px;line-height:1.8;margin:0 0 12px}
+.psg p.zh{font-size:14px;color:var(--muted);line-height:1.7;margin-top:-6px}
+.rl{display:grid}
+.rw{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;padding:10px 2px;border-bottom:1px solid var(--line);align-items:center}
+.rw .w{font-family:var(--f-display);font-size:17px}
+.rw .rt{display:flex;gap:6px;align-items:center}
+.st{font-size:12px;padding:2px 8px;border-radius:10px;background:var(--soft);white-space:nowrap}
+.st-master{background:var(--go-bg);color:var(--go)}
+.st-learning{background:var(--mark)}
+.rq{margin-top:12px}
+.rq p{margin:0 0 8px}
+.rq .fb{margin-top:8px}
 .chips{display:flex;gap:6px;flex-wrap:wrap}
 .chips button{padding:5px 12px;font-size:13px;border-radius:20px}
 .chips button[aria-pressed="true"]{background:var(--ink);color:var(--paper);border-color:var(--ink)}
@@ -164,7 +179,7 @@ td.num,th.num{text-align:right;font-family:var(--f-mono);font-variant-numeric:ta
     <div><div class="k">熟記單字</div><div class="v" id="mMaster">0</div><div class="bar"><i class="hl" id="bMaster" style="width:0"></i></div></div>
   </div>
   <nav class="tabs" aria-label="主選單">
-    <a href="#today" data-v="today">今日</a><a href="#words" data-v="words">單字庫</a><a href="#tests" data-v="tests">測驗紀錄</a><a href="#about" data-v="about">計畫與設定</a>
+    <a href="#today" data-v="today">今日</a><a href="#read" data-v="read">每日閱讀</a><a href="#words" data-v="words">單字庫</a><a href="#tests" data-v="tests">測驗紀錄</a><a href="#about" data-v="about">計畫與設定</a>
   </nav>
 </div></header>
 <div class="wrap"><main id="main"></main></div>
@@ -292,13 +307,65 @@ function planFor(d){
     const r=pick(learnedIdx(),10);steps.push({id:'talk',name:'隨機會話',desc:'10 個隨機舊字組成的對話',min:3,list:r});}
   return {d,info,steps};
 }
+/* ---------- 每日閱讀 ---------- */
+let NEWS=null, PASS=null, rdNews=0, rdLesson=null, rdZh=false;
+const STZH={new:'未學',learning:'學習中',master:'熟記'};
+let WMAP=null;
+function wordMap(){if(WMAP)return WMAP;WMAP=new Map();
+  const vars=w=>{const v=[w,w+'s',w+'es',w+'ed',w+'d',w+'ing',w+"'s"];if(w.endsWith('e'))v.push(w.slice(0,-1)+'ing');if(/[^aeiou]y$/.test(w))v.push(w.slice(0,-1)+'ies',w.slice(0,-1)+'ied');if(/[^aeiou][aeiou][bdgmnprt]$/.test(w)){const c=w.slice(-1);v.push(w+c+'ed',w+c+'ing')}return v};
+  W.forEach(o=>vars(o.w.toLowerCase()).forEach(f=>{if(!WMAP.has(f))WMAP.set(f,o.i)}));
+  W.forEach(o=>o.fam.forEach(([x])=>[x,x+'s'].forEach(f=>{if(!WMAP.has(f))WMAP.set(f,o.i)})));return WMAP}
+function curLesson(){if(!S.start)return 0;for(let d=Math.min(S.day,56);d>=1;d--){const t=dayInfo(d);if(t.type==='learn')return t.lesson}return S.day>56?LESSONS-1:0}
+function sayAll(t){if(!canSay)return;try{speechSynthesis.cancel();(t.match(/[^.!?\n]+[.!?]*/g)||[t]).map(s=>s.trim()).filter(Boolean).forEach(s=>{const u=new SpeechSynthesisUtterance(s);u.lang='en-US';u.rate=.9;speechSynthesis.speak(u)})}catch(e){}}
+function wordRow(i,form){const o=W[i],st=status(i);
+  return `<div class="rw"><div><b class="w">${esc(o.w)}</b>${form&&form!==o.w.toLowerCase()?` <span class="small muted">文中：${esc(form)}</span>`:''} ${kkHTML(o)}<div class="small">${esc(o.d)}</div></div><div class="rt"><span class="st st-${st}">${STZH[st]}</span>${sayBtn(o.w)}</div></div>`}
+function markPassage(text,set){return esc(text).replace(/[A-Za-zé][A-Za-zé'-]*/g,t=>{const i=wordMap().get(t.toLowerCase());return i!==undefined&&set.has(i)?`<mark>${t}</mark>`:t})}
+async function loadRead(){const get=u=>fetch(u,{cache:'no-cache'}).then(r=>{if(!r.ok)throw 0;return r.json()});
+  if(!NEWS)NEWS=await get('data/news.json').catch(()=>[]);
+  if(!PASS)PASS=await get('data/passages.json').catch(()=>[]);}
+async function vRead(m){m.innerHTML=`<section class="card"><p class="muted">載入中…</p></section>`;await loadRead();if(view!=='read')return;
+  if(rdLesson===null)rdLesson=curLesson();
+  const n=NEWS[rdNews];
+  const newsHTML=!n?`<section class="card"><div class="eyebrow">每日新聞</div><p class="muted">今天的新聞還沒更新，晚點再來看看。</p></section>`:
+  `<section class="card"><div class="row" style="justify-content:space-between"><div class="eyebrow">每日新聞 · ${esc(n.source)} · Level ${n.level}</div>
+   ${NEWS.length>1?`<select id="rdN" aria-label="選擇日期" style="width:auto">${NEWS.map((x,k)=>`<option value="${k}"${k===rdNews?' selected':''}>${x.date.replace(/-/g,'/')}${k===0?'（最新）':''}</option>`).join('')}</select>`:''}</div>
+   <h2 class="rd-t">${esc(n.title.replace(/\s*[–-]\s*level \d\s*$/i,''))}</h2>
+   <p class="rd-teaser">${esc(n.teaser)}</p>
+   <div class="row"><a class="btn" href="${esc(n.link)}" target="_blank" rel="noopener">到原網站讀全文 ↗</a><span class="small muted">原文版權屬 ${esc(n.source)}，這裡只放摘要與單字。</span></div>
+   <h3 style="margin-top:18px">文中的多益單字 <span class="small muted">${n.words.length} 個</span></h3>
+   ${n.words.length?`<p class="small muted" style="margin:0 0 6px">先看單字，再去讀原文，讀到時特別注意它們的用法。</p><div class="rl">${n.words.slice().sort((a,b)=>({learning:0,master:1,new:2}[status(a[0])])-({learning:0,master:1,new:2}[status(b[0])])).map(([i,f])=>wordRow(i,f)).join('')}</div>`:'<p class="muted">這篇沒有出現單字表裡的字。</p>'}</section>`;
+  const p=PASS[rdLesson];let passHTML='';
+  if(p){const lw=new Set(lessonWords(rdLesson));const found=[];const seen=new Set();
+    for(const t of p.en.match(/[A-Za-zé][A-Za-zé'-]*/g)||[]){const i=wordMap().get(t.toLowerCase());if(i!==undefined&&lw.has(i)&&!seen.has(i)){seen.add(i);found.push([i,t.toLowerCase()])}}
+    const enP=p.en.split('\n\n'),zhP=p.zh.split('\n\n');
+    passHTML=`<section class="card"><div class="row" style="justify-content:space-between"><div class="eyebrow">多益短文 · ${esc(p.g)}</div>
+    <select id="rdL" aria-label="選擇課次" style="width:auto">${PASS.map((_,L)=>`<option value="${L}"${L===rdLesson?' selected':''}>第 ${L+1} 課${L===curLesson()&&S.start?'（目前）':''}</option>`).join('')}</select></div>
+    <h2 class="rd-t">${esc(p.t)}</h2>
+    <p class="small muted">用第 ${rdLesson+1} 課的單字寫成，標黃的是這課的字（${found.length} 個）。</p>
+    <div class="row" style="margin-bottom:10px">${canSay?`<button id="rdSay">朗讀全文</button><button id="rdStop">停止</button>`:''}<button id="rdZh" aria-pressed="${rdZh}">${rdZh?'隱藏':'顯示'}中文翻譯</button></div>
+    <div class="psg">${enP.map((x,k)=>`<p>${markPassage(x,lw).replace(/\n/g,'<br>')}</p>${rdZh&&zhP[k]?`<p class="zh">${esc(zhP[k]).replace(/\n/g,'<br>')}</p>`:''}`).join('')}</div>
+    <h3 style="margin-top:18px">閱讀測驗</h3>
+    ${p.q.map((q,k)=>`<div class="rq" data-k="${k}"><p><b>${k+1}.</b> ${esc(q[0])}</p><div class="opts">${q[1].map((o,j)=>`<button data-j="${j}"><span class="k">${'ABCD'[j]}</span>${esc(o)}</button>`).join('')}</div><div class="fb" hidden></div></div>`).join('')}
+    <h3 style="margin-top:18px">本課重點單字</h3><div class="rl">${found.map(([i,f])=>wordRow(i,f)).join('')}</div></section>`}
+  m.innerHTML=newsHTML+passHTML;
+  const rn=$('#rdN');if(rn)rn.onchange=()=>{rdNews=+rn.value;vRead(m)};
+  const rl=$('#rdL');if(rl)rl.onchange=()=>{rdLesson=+rl.value;vRead(m)};
+  const rz=$('#rdZh');if(rz)rz.onclick=()=>{rdZh=!rdZh;vRead(m)};
+  const rs=$('#rdSay');if(rs)rs.onclick=()=>sayAll(p.en);
+  const rx=$('#rdStop');if(rx)rx.onclick=()=>{try{speechSynthesis.cancel()}catch(e){}};
+  m.querySelectorAll('.rq').forEach(box=>{const q=p.q[+box.dataset.k];box.querySelectorAll('.opts button').forEach(b=>b.onclick=()=>{if(box.dataset.done)return;box.dataset.done=1;const j=+b.dataset.j;
+    box.querySelectorAll('.opts button').forEach(x=>{if(+x.dataset.j===q[2])x.classList.add('right');else if(x===b)x.classList.add('wrong')});
+    const fb=box.querySelector('.fb');fb.hidden=false;fb.style.background=j===q[2]?'var(--go-bg)':'var(--no-bg)';fb.innerHTML=`<b>${j===q[2]?'答對了':'正確答案是 '+'ABCD'[q[2]]}</b>　${esc(q[3])}`})});
+}
+
 /* ---------- views ---------- */
 let view='today', inSession=false, todayPlan=null;
-function route(){const h=(location.hash||'#today').slice(1);view=['today','words','tests','about'].includes(h)?h:'today';
+function route(){const h=(location.hash||'#today').slice(1);view=['today','read','words','tests','about'].includes(h)?h:'today';
   document.querySelectorAll('nav.tabs a').forEach(a=>a.setAttribute('aria-current',a.dataset.v===view?'page':'false'));if(!inSession)render()}
 window.addEventListener('hashchange',()=>{if(inSession){inSession=false;try{window.speechSynthesis&&speechSynthesis.cancel()}catch(e){}}route()});
 function render(){paintMeter();const m=$('#main');
   if(view==='today')m.innerHTML=S.start?vToday():vWelcome();
+  else if(view==='read')vRead(m);
   else if(view==='words')vWords(m);
   else if(view==='tests')m.innerHTML=vTests();
   else m.innerHTML=vAbout();
@@ -371,6 +438,7 @@ function vAbout(){return `<section class="card"><h2>計畫怎麼運作</h2>
 <li><b>每週第 7 天週考</b>：40 題，題型有英翻中、中翻英、例句填空、詞性變化、拼字。考錯的字明天再複習。</li>
 <li><b>第 57–59 天</b>衝刺複習與弱點加強，<b>第 60 天</b>期末總測驗 100 題，目標 80 分以上。</li>
 <li><b>會話</b>：每個學習日把當天的例句串成對話，先讀懂再跟著唸一遍。</li>
+<li><b>每日閱讀</b>：每天早上自動挑一篇 News in Levels 的英文新聞，列出文中出現的多益單字；另有 48 篇多益風格短文，每課一篇，用該課單字寫成，附中文翻譯與閱讀測驗。</li>
 <li><b>KK 音標</b>：每張單字卡、測驗回饋與單字庫都有標註，沒辦法開聲音時可以看音標唸。重音符號 ˋ 標在主重音音節前，ˏ 是次重音；名詞和動詞重音不同的字會分開列出。</li></ul>
 <p class="small muted">快速鍵：空白鍵翻卡、1/2/3 評分、1–4 選答案、Enter 下一題。</p></section>
 <section class="card"><h3>設定</h3><div class="row" style="margin-top:10px"><label class="small muted" for="sd">開始日期</label><input type="date" id="sd" value="${S.start||today()}" style="width:auto"><button id="saveStart">更新</button></div>

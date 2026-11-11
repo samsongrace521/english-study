@@ -357,8 +357,8 @@ function wordMap(){if(WMAP)return WMAP;WMAP=new Map();
   W.forEach(o=>o.fam.forEach(([x])=>[x,x+'s'].forEach(f=>{if(!WMAP.has(f))WMAP.set(f,o.i)})));return WMAP}
 function curLesson(){if(!S.start)return 0;for(let d=Math.min(S.day,56);d>=1;d--){const t=dayInfo(d);if(t.type==='learn')return t.lesson}return S.day>56?LESSONS-1:0}
 function sayAll(t){if(!canSay)return;try{speechSynthesis.cancel();(t.match(/[^.!?\n]+[.!?]*/g)||[t]).map(s=>s.trim()).filter(Boolean).forEach(s=>{const u=new SpeechSynthesisUtterance(s);u.lang='en-US';u.rate=.9;speechSynthesis.speak(u)})}catch(e){}}
-function wordRow(i,form){const o=W[i],st=status(i);
-  return `<div class="rw"><div><b class="w">${esc(o.w)}</b>${form&&form!==o.w.toLowerCase()?` <span class="small muted">文中：${esc(form)}</span>`:''} ${kkHTML(o)}<div class="small">${esc(o.d)}</div></div><div class="rt"><span class="st st-${st}">${STZH[st]}</span>${sayBtn(o.w)}</div></div>`}
+function wordRow(i,form,hideNew){const o=W[i],st=status(i);
+  return `<div class="rw"><div><b class="w">${esc(o.w)}</b>${form&&form!==o.w.toLowerCase()?` <span class="small muted">文中：${esc(form)}</span>`:''} ${kkHTML(o)}<div class="small">${esc(o.d)}</div></div><div class="rt">${hideNew&&st==="new"?"":`<span class="st st-${st}">${STZH[st]}</span>`}${sayBtn(o.w)}</div></div>`}
 function markPassage(text,set){return esc(text).replace(/[A-Za-zé][A-Za-zé'-]*/g,t=>{const i=wordMap().get(t.toLowerCase());return i!==undefined&&set.has(i)?`<mark>${t}</mark>`:t})}
 async function loadRead(){const get=u=>fetch(u,{cache:'no-cache'}).then(r=>{if(!r.ok)throw 0;return r.json()});
   if(!NEWS)NEWS=await get('data/news.json').catch(()=>[]);
@@ -375,7 +375,7 @@ async function vRead(m){m.innerHTML=`<section class="card"><p class="muted">載�
    <div class="row"><a class="btn" href="${esc(n.link)}" target="_blank" rel="noopener">到原網站讀全文 ↗</a>${n.stats?`<span class="small muted">全文約 ${n.stats.words} 字 · 平均每句 ${n.stats.avgSentence} 字</span>`:''}</div>
    <p class="small muted" style="margin:12px 0 0">讀法：① 先看下面的單字 ② 開原文，複製英文內容 ③ 貼到下方「逐句閱讀器」，每句先自己讀懂，再打開中文確認。</p>
    <h3 style="margin-top:18px">文中的多益單字 <span class="small muted">${n.words.length} 個</span></h3>
-   ${n.words.length?(()=>{const ws=n.words.slice().sort((a,b)=>({learning:0,master:1,new:2}[status(a[0])])-({learning:0,master:1,new:2}[status(b[0])]));return `<div class="rl">${ws.slice(0,12).map(([i,f])=>wordRow(i,f)).join('')}</div>${ws.length>12?`<details class="more"><summary>展開其餘 ${ws.length-12} 個</summary><div class="rl">${ws.slice(12).map(([i,f])=>wordRow(i,f)).join('')}</div></details>`:''}`})():'<p class="muted">這篇沒有出現單字表裡的字。</p>'}</section>`;
+   ${n.words.length?(()=>{const ws=n.words.slice().sort((a,b)=>({learning:0,master:1,new:2}[status(a[0])])-({learning:0,master:1,new:2}[status(b[0])]));return `<div class="rl">${ws.slice(0,12).map(([i,f])=>wordRow(i,f,1)).join('')}</div>${ws.length>12?`<details class="more"><summary>展開其餘 ${ws.length-12} 個</summary><div class="rl">${ws.slice(12).map(([i,f])=>wordRow(i,f,1)).join('')}</div></details>`:''}`})():'<p class="muted">這篇沒有出現單字表裡的字。</p>'}</section>`;
   const readerHTML=`<section class="card" id="rdr"><div class="eyebrow">逐句閱讀器</div><h2 class="rd-t">貼上文章，逐句讀、逐句對照中文</h2>
    <p class="copy">貼上的文章只存在你自己的瀏覽器，不會上傳，也不會出現在網站上。文章版權屬原出版者（例如 © Taipei Times），僅供個人學習使用，請勿轉貼或散布。</p>
    <textarea id="rdIn" rows="6" placeholder="把英文文章貼在這裡。中文段落與「Photo:」圖說會自動略過。" style="width:100%;margin-top:8px">${esc(rdText)}</textarea>

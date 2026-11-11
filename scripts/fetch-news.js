@@ -70,8 +70,11 @@ async function taipeiTimes(used) {
   for (const link of links) {
     try {
       const page = await get(link);
-      const title = text((page.match(/<title>([\s\S]*?)<\/title>/) || [, ''])[1]).replace(/\s*-\s*Taipei Times\s*$/, '');
+      let title = text((page.match(/<title>([\s\S]*?)<\/title>/) || [, ''])[1]).replace(/\s*-\s*Taipei Times\s*$/, '');
       if (SKIP_TITLE.test(title)) { console.log('skip column:', title); continue; }
+      // column pages (e.g. ENGLISH DIGEST) put the real headline in an <h3> right after the <h1>
+      const sub = page.match(/<h1>[^<]+<\/h1>\s*<h3>([\s\S]*?)<\/h3>/);
+      if (sub && text(sub[1]).length > 10) title = text(sub[1]);
       const ps = [...page.matchAll(/<p>([\s\S]*?)<\/p>/g)].map(m => text(m[1])).filter(Boolean);
       // the English story: paragraphs before the first long Chinese paragraph, without photo credits
       const firstZh = ps.findIndex(p => CJK.test(p) && !/^Photo/i.test(p) && p.replace(/[^㐀-鿿]/g, '').length > 30);

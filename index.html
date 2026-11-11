@@ -369,6 +369,7 @@ async function vRead(m){m.innerHTML=`<section class="card"><p class="muted">載�
   const newsHTML=!n?`<section class="card"><div class="eyebrow">每日新聞</div><p class="muted">今天的新聞還沒更新，晚點再來看看。</p></section>`:
   `<section class="card"><div class="row" style="justify-content:space-between"><div class="eyebrow">每日新聞 · ${esc(n.source)}${n.level?` · Level ${n.level}`:''}</div>
    ${NEWS.length>1?`<select id="rdN" aria-label="選擇日期" style="width:auto">${NEWS.map((x,k)=>`<option value="${k}"${k===rdNews?' selected':''}>${x.date.replace(/-/g,'/')}${k===0?'（最新）':''}</option>`).join('')}</select>`:''}</div>
+   ${rdNews===0&&n.date!==today()?`<p class="fb" style="background:var(--soft);margin:10px 0 0">今天的新聞還沒更新（每天早上自動更新，偶爾會延遲），先顯示 ${n.date.replace(/-/g,'/')} 的文章。</p>`:''}
    <h2 class="rd-t">${esc(n.title)}</h2>${n.titleZh?`<p class="muted" style="margin:0 0 8px">${esc(n.titleZh)}</p>`:''}
    <p class="rd-teaser">${esc(n.teaser)}</p>
    <p class="copy">© ${esc(n.source.replace(/ 中英對照$/,''))} 版權所有。本站只提供標題、開頭摘要、單字表與連結；全文${n.source.startsWith('Taipei')?'與官方中文翻譯':''}請到原網站閱讀。</p>

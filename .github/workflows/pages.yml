@@ -4,7 +4,9 @@ on:
   push:
     branches: [main]
   schedule:
-    - cron: '30 22 * * *'   # 06:30 Taiwan time
+    - cron: '17 22 * * *'   # 06:17 台灣時間
+    - cron: '17 1 * * *'    # 09:17 台灣時間（備援：若早上那次沒跑，這次補上；已有今天的新聞就不動）
+    - cron: '47 4 * * *'    # 12:47 台灣時間（第二次備援）
   workflow_dispatch:
     inputs:
       force:
